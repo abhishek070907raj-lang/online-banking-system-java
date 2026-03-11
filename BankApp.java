@@ -36,7 +36,7 @@ public class BankApp {
         }
     }
 
- public static void deposit(Connection con, Scanner sc) throws Exception {
+public static void deposit(Connection con, Scanner sc) throws Exception {
 
     System.out.print("Enter User ID: ");
     int id = sc.nextInt();
@@ -44,22 +44,33 @@ public class BankApp {
     System.out.print("Enter Amount: ");
     double amount = sc.nextDouble();
 
+    if(amount <= 0){
+        System.out.println("Invalid amount!");
+        return;
+    }
+
     PreparedStatement ps = con.prepareStatement(
             "UPDATE users SET balance = balance + ? WHERE id=?");
 
     ps.setDouble(1, amount);
     ps.setInt(2, id);
-    ps.executeUpdate();
 
-    PreparedStatement tr = con.prepareStatement(
-            "INSERT INTO transactions(user_id,type,amount) VALUES(?,?,?)");
+    int rows = ps.executeUpdate();
 
-    tr.setInt(1, id);
-    tr.setString(2, "Deposit");
-    tr.setDouble(3, amount);
-    tr.executeUpdate();
+    if(rows > 0){
+        PreparedStatement tr = con.prepareStatement(
+                "INSERT INTO transactions(user_id,type,amount) VALUES(?,?,?)");
 
-    System.out.println("Money Deposited Successfully!");
+        tr.setInt(1, id);
+        tr.setString(2, "Deposit");
+        tr.setDouble(3, amount);
+        tr.executeUpdate();
+
+        System.out.println("Money Deposited Successfully!");
+    }
+    else{
+        System.out.println("User not found!");
+    }
 }
 
   public static void withdraw(Connection con, Scanner sc) throws Exception {
@@ -132,6 +143,24 @@ public class BankApp {
     }
 }
 
+public static void viewUsers(Connection con) throws Exception {
+
+    Statement st = con.createStatement();
+
+    ResultSet rs = st.executeQuery("SELECT id,name,email,balance FROM users");
+
+    System.out.println("---- All Users ----");
+
+    while(rs.next()){
+        System.out.println(
+            rs.getInt("id") + " | " +
+            rs.getString("name") + " | " +
+            rs.getString("email") + " | " +
+            rs.getDouble("balance")
+        );
+    }
+}
+
     public static void main(String[] args) {
 
         try {
@@ -147,7 +176,8 @@ public class BankApp {
                 System.out.println("3. Withdraw Money");
                 System.out.println("4. Check Balance");
                 System.out.println("5. Transaction History");
-                System.out.println("6. Exit");
+                System.out.println("6. View All Users");
+                System.out.println("7. Exit");
 
                 System.out.print("Choose Option: ");
                 int choice = sc.nextInt();
@@ -176,6 +206,10 @@ public class BankApp {
                         break;
 
                     case 6:
+                        viewUsers(con);
+                        break;
+
+                    case 7:
                         System.exit(0);
 
                     default:
